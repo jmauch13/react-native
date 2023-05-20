@@ -11,13 +11,13 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Animatable from 'react-native-animatable';
+import * as Notifications from 'expo-notifications';
 
 const ReservationScreen = () => {
     const [campers, setCampers] = useState(1);
     const [hikeIn, setHikeIn] = useState(false);
     const [date, setDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
-
 
     const onDateChange = (event, selectedDate) => {
         const currentDate = selectedDate || date;
@@ -27,27 +27,29 @@ const ReservationScreen = () => {
 
     const handleReservation = () => {
         const message = `Number of Campers: ${campers}
-            \nHike-in? ${hikeIn}
-            \nDate: ${date.toLocaleDateString("en-US")}`;
+                            \nHike-In? ${hikeIn}
+                            \nDate: ${date.toLocaleDateString('en-US')}`;
         Alert.alert(
-            "Begin Search",
+            'Begin Search?',
             message,
             [
                 {
-                    text: "Cancel",
+                    text: 'Cancel',
                     onPress: () => {
-                        console.log("Reservation Search Canceled");
+                        console.log('Reservation Search Canceled');
                         resetForm();
                     },
-                    style: "cancel",
+                    style: 'cancel'
                 },
                 {
-                    text: "OK",
+                    text: 'OK',
                     onPress: () => {
-                        console.log("Reservation was Successful!");
+                        presentLocalNotification(
+                            date.toLocaleDateString('en-US')
+                        );
                         resetForm();
-                    },
-                },
+                    }
+                }
             ],
             { cancelable: false }
         );
@@ -61,6 +63,34 @@ const ReservationScreen = () => {
         setHikeIn(false);
         setDate(new Date());
         setShowCalendar(false);
+    };
+
+    const presentLocalNotification = async (reservationDate) => {
+        const sendNotification = () => {
+            Notifications.setNotificationHandler({
+                handleNotification: async () => ({
+                    shouldShowAlert: true,
+                    shouldPlaySound: true,
+                    shouldSetBadge: true
+                })
+            });
+
+            Notifications.scheduleNotificationAsync({
+                content: {
+                    title: 'Your Campsite Reservation Search',
+                    body: `Search for ${reservationDate} requested`
+                },
+                trigger: null
+            });
+        };
+
+        let permissions = await Notifications.getPermissionsAsync();
+        if (!permissions.granted) {
+            permissions = await Notifications.requestPermissionsAsync();
+        }
+        if (permissions.granted) {
+            sendNotification();
+        }
     };
 
     return (
